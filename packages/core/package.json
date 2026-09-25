@@ -1,0 +1,21 @@
+{
+  "name": "@cubbon/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@cubbon/prompts": "workspace:*",
+    "@parcel/watcher": "^2",
+    "mdast-util-to-string": "^4.0.0",
+    "pino": "^9.0.0",
+    "remark-gfm": "^4.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.0",
+    "yaml": "^2.8.0",
+    "zod": "^4.0.0"
+  }
+}

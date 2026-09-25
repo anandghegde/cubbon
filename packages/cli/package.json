@@ -1,0 +1,16 @@
+{
+  "name": "@cubbon/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "cubbon": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "bun build --compile --minify --sourcemap ./src/index.ts --outfile ../../dist/cubbon"
+  },
+  "dependencies": {
+    "@cubbon/core": "workspace:*",
+    "commander": "^14.0.0"
+  }
+}
