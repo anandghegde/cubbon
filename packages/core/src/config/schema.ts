@@ -29,9 +29,13 @@ export const DEFAULT_EXCLUDE_DIRS = [
 ];
 
 export const ModelSpecSchema = z.object({
-  provider: z.enum(['anthropic', 'ollama', 'fake']),
+  /** openai: any OpenAI-compatible Chat Completions endpoint. ollama: the native Ollama API. */
+  provider: z.enum(['openai', 'ollama', 'fake']),
   model: z.string().min(1),
+  /** For openai, a /v1 base URL (OpenAI, OpenRouter, Groq, Ollama, LM Studio, vLLM, ...). */
   baseUrl: z.string().optional(),
+  /** Environment variable that holds the API key. Default OPENAI_API_KEY. */
+  apiKeyEnv: z.string().optional(),
 });
 export type ModelSpec = z.infer<typeof ModelSpecSchema>;
 
@@ -56,7 +60,7 @@ export const VaultConfigSchema = z.object({
     .prefault({}),
   models: z
     .object({
-      extractor: ModelSpecSchema.prefault({ provider: 'anthropic', model: 'claude-fable-5-1' }),
+      extractor: ModelSpecSchema.prefault({ provider: 'openai', model: 'gpt-4.1-mini' }),
       triage: ModelSpecSchema.prefault({
         provider: 'ollama',
         model: 'qwen3:4b',
@@ -92,7 +96,7 @@ export type VaultConfig = z.infer<typeof VaultConfigSchema>;
 
 export const GlobalConfigSchema = z.object({
   defaultVault: z.string().optional(),
-  anthropicApiKey: z.string().optional(),
+  openaiApiKey: z.string().optional(),
   telemetry: z.boolean().default(false),
 });
 export type GlobalConfig = z.infer<typeof GlobalConfigSchema>;

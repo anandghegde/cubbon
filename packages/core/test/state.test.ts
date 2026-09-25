@@ -63,7 +63,7 @@ describe('StateDb', () => {
     db.recordLlmCall({
       ts: '2026-09-25T10:00:00Z',
       runId: null,
-      provider: 'anthropic',
+      provider: 'openai',
       model: 'm',
       purpose: 'extract',
       sourceHash: 'abc',
@@ -76,7 +76,7 @@ describe('StateDb', () => {
     db.recordLlmCall({
       ts: '2026-09-25T10:00:00Z',
       runId: null,
-      provider: 'anthropic',
+      provider: 'openai',
       model: 'm',
       purpose: 'extract',
       sourceHash: 'abc',

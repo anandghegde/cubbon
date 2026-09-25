@@ -7,6 +7,7 @@ import { expandHome } from '../util/paths.ts';
 import {
   type GlobalConfig,
   GlobalConfigSchema,
+  type ModelSpec,
   type VaultConfig,
   VaultConfigSchema,
 } from './schema.ts';
@@ -76,7 +77,13 @@ export async function writeGlobalConfig(config: GlobalConfig): Promise<void> {
   await writeFile(file, YAML.stringify(config), { encoding: 'utf8', mode: 0o600 });
 }
 
-/** API key resolution order: environment, then global config. Keychain support is tracked for M0. */
-export function resolveAnthropicApiKey(global: GlobalConfig): string | undefined {
-  return process.env.ANTHROPIC_API_KEY ?? global.anthropicApiKey;
+/**
+ * API key for a model spec: the named environment variable (default OPENAI_API_KEY), then the
+ * global config. Keychain support is tracked for M0.
+ */
+export function resolveApiKey(spec: ModelSpec, global: GlobalConfig): string | undefined {
+  const envName = spec.apiKeyEnv ?? 'OPENAI_API_KEY';
+  const fromEnv = process.env[envName];
+  if (fromEnv) return fromEnv;
+  return envName === 'OPENAI_API_KEY' ? global.openaiApiKey : undefined;
 }

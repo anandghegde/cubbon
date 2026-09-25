@@ -1,9 +1,12 @@
 import {
   contractHome,
+  isOfficialOpenAI,
   loadGlobalConfig,
   loadVaultConfig,
   OllamaProvider,
-  resolveAnthropicApiKey,
+  OPENAI_DEFAULT_BASE_URL,
+  OpenAIProvider,
+  resolveApiKey,
 } from '@cubbon/core';
 import type { Command } from 'commander';
 import { resolveVault } from '../vault.ts';
@@ -30,13 +33,37 @@ export function registerDoctor(program: Command): void {
           detail: `${contractHome(vaultPath)}, ${config.watch.folders.length} folders`,
         });
         const global = await loadGlobalConfig();
-        if (config.models.extractor.provider === 'anthropic') {
-          const key = resolveAnthropicApiKey(global);
+        const extractor = config.models.extractor;
+        if (extractor.provider === 'openai') {
+          const key = resolveApiKey(extractor, global);
+          const envName = extractor.apiKeyEnv ?? 'OPENAI_API_KEY';
+          const required = isOfficialOpenAI(extractor.baseUrl);
           checks.push({
-            name: 'anthropic key',
-            ok: Boolean(key),
-            detail: key ? `present (${key.slice(0, 8)}…)` : 'ANTHROPIC_API_KEY not set',
+            name: 'api key',
+            ok: Boolean(key) || !required,
+            detail: key
+              ? `present (${key.slice(0, 6)}…) from ${process.env[envName] ? envName : 'global config'}`
+              : required
+                ? `${envName} not set`
+                : `${envName} not set (not required for ${extractor.baseUrl})`,
           });
+          if (key || !required) {
+            const probe = await new OpenAIProvider(extractor.model, {
+              apiKey: key,
+              baseUrl: extractor.baseUrl,
+            }).probe();
+            checks.push({
+              name: 'extractor',
+              ok: probe.ok,
+              detail: `${extractor.model}: ${probe.detail}`,
+            });
+          } else {
+            checks.push({
+              name: 'extractor',
+              ok: false,
+              detail: `${extractor.model} at ${extractor.baseUrl ?? OPENAI_DEFAULT_BASE_URL}: skipped, no key`,
+            });
+          }
         }
         if (
           config.models.triage.provider === 'ollama' ||

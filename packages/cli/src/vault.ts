@@ -8,7 +8,7 @@ import {
   loadVaultConfig,
   type PipelineContext,
   type Provider,
-  resolveAnthropicApiKey,
+  resolveApiKey,
   type VaultConfig,
 } from '@cubbon/core';
 
@@ -45,7 +45,7 @@ export async function openContext(
     const cassettes = mode
       ? { dir: config.cassettes.dir ?? path.join(vaultPath, '.cubbon', 'cassettes'), mode }
       : undefined;
-    provider = createProvider(spec, { anthropicApiKey: resolveAnthropicApiKey(global), cassettes });
+    provider = createProvider(spec, { apiKey: resolveApiKey(spec, global), cassettes });
     providerNote = `${provider.name} ${provider.model}`;
   }
   const ctx = createContext(vaultPath, config, { provider });

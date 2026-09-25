@@ -34,7 +34,9 @@ export function registerInit(program: Command): void {
         console.log(
           `Edit ${contractHome(path.join(vaultPath, '.cubbon', 'config.yaml'))} to adjust folders, owner and models.`,
         );
-        console.log('Set ANTHROPIC_API_KEY, then run `cubbon compile`.');
+        console.log(
+          'Set OPENAI_API_KEY (or point models.extractor.baseUrl at a local OpenAI-compatible server), then run `cubbon compile`.',
+        );
       },
     );
 }

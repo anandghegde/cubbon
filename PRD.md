@@ -438,7 +438,7 @@ date: 2026-09-20
   "confidence": 0.92,
   "authority": 0.6,
   "extractor_version": "0.1.3",
-  "model": "claude-fable-5-1"
+  "model": "gpt-4.1-mini"
 }
 ```
 

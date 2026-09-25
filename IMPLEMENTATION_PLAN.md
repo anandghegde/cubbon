@@ -18,7 +18,7 @@ Each decision gets an Architecture Decision Record in `docs/adr/` during week 0.
 
 - One language for the pipeline, the daemon, the MCP server and the Obsidian plugin (which must be TypeScript).
 - Bun provides a built-in SQLite driver, test runner, bundler and single-file executable output, which covers the packaging requirement without extra tooling.
-- The official MCP SDK and the Anthropic SDK are first-class in TypeScript, with structured outputs.
+- The official MCP SDK is first-class in TypeScript, and every OpenAI-compatible server exposes structured outputs over plain `fetch`.
 - Rowboat is a TypeScript codebase with hard-won patterns (one file per extraction run, owner identity block, mtime plus hash state) that can be read directly.
 - Risk: native module compatibility under Bun. Fallback is Node 22 with tsx and esbuild, and the code is written to run on both. Week 0 spike confirms the watcher and SQLite paths.
 
@@ -38,7 +38,7 @@ Each decision gets an Architecture Decision Record in `docs/adr/` during week 0.
 
 ### ADR-005 Provider abstraction with recorded cassettes
 
-- A `Provider` interface with `complete(structured)` implemented for Anthropic and Ollama. Every call can be recorded to a cassette file keyed by a hash of the prompt and schema. Tests replay cassettes; a nightly job runs live against the golden set with a spend cap.
+- A `Provider` interface with `complete(structured)` implemented for OpenAI-compatible Chat Completions (OpenAI, OpenRouter, Groq, Ollama `/v1`, LM Studio, vLLM) and native Ollama. Anthropic support is deferred. Every call can be recorded to a cassette file keyed by a hash of the prompt and schema. Tests replay cassettes; a nightly job runs live against the golden set with a spend cap.
 
 ### ADR-006 Review round trip through a Markdown checklist
 
@@ -55,7 +55,7 @@ Each decision gets an Architecture Decision Record in `docs/adr/` during week 0.
 | Frontmatter | gray-matter or the remark-frontmatter node | |
 | YAML | yaml | Bases files, config, aliases |
 | Schemas | zod, zod-to-json-schema | Claim schema, config schema, MCP tool schemas |
-| LLM | @anthropic-ai/sdk, plain fetch for Ollama | Structured outputs via tool use with JSON schema |
+| LLM | plain fetch for OpenAI-compatible Chat Completions and Ollama | Structured outputs via `response_format: json_schema`, JSON mode fallback |
 | MCP | @modelcontextprotocol/sdk | stdio and streamable HTTP |
 | SQLite | bun:sqlite, better-sqlite3 as Node fallback | |
 | Logging | pino | JSON logs to `.cubbon/logs/` |
@@ -81,7 +81,7 @@ cubbon/
         fs/                      watcher, hashing, raw store, path rules
         triage/                  work-or-not, source type detection
         parse/                   markdown, frontmatter, doc date, chunking, source pre-processors
-        llm/                     provider interface, anthropic, ollama, cassettes, cost
+        llm/                     provider interface, openai-compatible, ollama, cassettes, cost
         extract/                 prompt assembly, claim schema, claim ids, extractor version
         merge/                   alias table, resolution, status log, dates, conflicts, commitments
         model/                   domain types, entity and claim persistence, sqlite index
@@ -281,7 +281,7 @@ Effort is in engineer-days. Sequencing puts the risky, load-bearing pieces first
 |---|---|---|---|
 | Repo, workspaces, biome, CI skeleton, bun test | B | 1 | Green pipeline on an empty package |
 | Spike: @parcel/watcher and bun:sqlite under Bun; single-file build on macOS arm64 | B | 1 | ADR-001 confirmed or fallback chosen |
-| Spike: Anthropic structured output with the zod claim schema on 5 real docs | A | 1.5 | Sample claims, prompt v0 |
+| Spike: OpenAI-compatible structured output with the zod claim schema on 5 real docs | A | 1.5 | Sample claims, prompt v0 |
 | Spike: Ollama triage model choice (a 4B class model) on 200 mixed files | A | 1 | Precision on work-or-not, latency |
 | Verify Bases kanban type string, Bases Timeline property names, graph.json colour group format, JSON Canvas spec | B | 0.5 | Notes in docs/ |
 | Write ADR-001 to ADR-006 | A, B | 1 | docs/adr/ |
@@ -298,7 +298,7 @@ Goal: `cubbon compile` over a folder of Markdown produces a deterministic vault 
 | 0.3 | Raw store | FR1.4 | B | 1 | 0.2 |
 | 0.4 | Heuristic triage, source type stub (document only) | FR1.5 | A | 1.5 | 0.2 |
 | 0.5 | Markdown parse, frontmatter, doc date inference, chunking | FR2 | A | 2.5 | W0 |
-| 0.6 | Provider interface, Anthropic and Ollama, cassette recorder, cost table | FR9.1, FR9.6 | A | 2.5 | W0 |
+| 0.6 | Provider interface, OpenAI-compatible and Ollama, cassette recorder, cost table | FR9.1, FR9.6 | A | 2.5 | W0 |
 | 0.7 | Claim schema, prompt v1 for documents, owner block, extractor version, claim ids | FR3.1 to FR3.3, FR3.6, FR3.7 | A | 3 | 0.5, 0.6 |
 | 0.8 | Claims JSONL persistence, SQLite index, claim diff and supersession | ADR-002 | A | 2 | 0.7 |
 | 0.9 | Entity model and persistence | ADR-002 | B | 2 | W0 |
@@ -449,6 +449,6 @@ Every milestone: exit criteria met and recorded in `docs/milestones.md` with the
 - [ ] Spike results recorded: watcher, SQLite, structured output, triage model, Bases and timeline property names
 - [ ] Golden set v0 in `fixtures/golden/` with expected claims for 40 documents
 - [ ] Config schema and `cubbon init` create a vault with `.obsidian/` config
-- [ ] Provider interface with Anthropic and Ollama implementations and cassette recorder
+- [x] Provider interface with OpenAI-compatible and Ollama implementations and cassette recorder
 - [ ] Markdown parse, document date inference and chunking with tests
 - [ ] First end-to-end: one document in, one Project note and one Source note out, by hand-run script
