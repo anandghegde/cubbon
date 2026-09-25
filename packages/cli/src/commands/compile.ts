@@ -1,4 +1,4 @@
-import { type CassetteMode, compile, contractHome } from '@cubbon/core';
+import { type CassetteMode, compile, contractHome, fmtUsd } from '@cubbon/core';
 import type { Command } from 'commander';
 import { openContext } from '../vault.ts';
 
@@ -56,7 +56,7 @@ export function registerCompile(program: Command): void {
             `scanned ${summary.scanned}  unchanged ${summary.unchanged}  ignored ${summary.ignored}  stored ${summary.stored}  extracted ${summary.extracted}  errors ${summary.errors}`,
           );
           console.log(
-            `claims ${summary.claims}  cost ${summary.costUsd === null ? 'unknown' : `$${summary.costUsd.toFixed(4)}`}  time ${(summary.durationMs / 1000).toFixed(1)}s`,
+            `claims ${summary.claims}  cost ${fmtUsd(summary.costUsd)}  time ${(summary.durationMs / 1000).toFixed(1)}s`,
           );
           if (summary.render) {
             const r = summary.render;

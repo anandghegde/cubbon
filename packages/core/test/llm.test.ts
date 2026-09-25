@@ -6,7 +6,7 @@ import { CassetteProvider } from '../src/llm/cassette.ts';
 import { FakeProvider } from '../src/llm/fake.ts';
 import { toJsonSchema } from '../src/llm/jsonschema.ts';
 import { OpenAIProvider } from '../src/llm/openai.ts';
-import { estimateCost } from '../src/llm/pricing.ts';
+import { estimateCost, fmtUsd } from '../src/llm/pricing.ts';
 import { ProviderError } from '../src/llm/types.ts';
 import { tempDir } from './helpers.ts';
 
@@ -104,7 +104,15 @@ function mockServer(handler: Handler) {
   };
 }
 
-function completion(content: string, usage = { prompt_tokens: 10, completion_tokens: 5 }) {
+function completion(
+  content: string,
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    cost?: number;
+    cost_details?: { upstream_inference_cost?: number };
+  } = { prompt_tokens: 10, completion_tokens: 5 },
+) {
   return Response.json({
     model: 'test-model',
     choices: [{ message: { role: 'assistant', content } }],
@@ -157,6 +165,47 @@ describe('openai-compatible provider', () => {
     } finally {
       srv.stop();
     }
+  });
+
+  test('prefers the cost reported by the server over the price table', async () => {
+    const srv = mockServer(() =>
+      completion('{"answer":"42"}', {
+        prompt_tokens: 100,
+        completion_tokens: 20,
+        cost: 0.00002366,
+      }),
+    );
+    try {
+      const res = await provider(srv.baseUrl).complete(req);
+      expect(res.costUsd).toBeCloseTo(0.00002366, 10);
+      expect(res.usage).toEqual({ inputTokens: 100, outputTokens: 20 });
+    } finally {
+      srv.stop();
+    }
+  });
+
+  test('adds upstream inference cost reported by bring-your-own-key gateways', async () => {
+    const byok = mockServer(() =>
+      completion('{"answer":"42"}', {
+        prompt_tokens: 100,
+        completion_tokens: 20,
+        cost: 0,
+        cost_details: { upstream_inference_cost: 0.0015 },
+      }),
+    );
+    try {
+      expect((await provider(byok.baseUrl).complete(req)).costUsd).toBeCloseTo(0.0015, 10);
+    } finally {
+      byok.stop();
+    }
+  });
+
+  test('formats dollar amounts for logs', () => {
+    expect(fmtUsd(null)).toBe('unknown');
+    expect(fmtUsd(0)).toBe('$0.0000');
+    expect(fmtUsd(0.00002366)).toBe('$0.000024');
+    expect(fmtUsd(0.0015)).toBe('$0.0015');
+    expect(fmtUsd(1.23456)).toBe('$1.2346');
   });
 
   test('gives up after the repair round', async () => {

@@ -30,7 +30,17 @@ interface ChatMessage {
 interface ChatCompletion {
   model?: string;
   choices?: { message?: { content?: string | null; refusal?: string | null } }[];
-  usage?: { prompt_tokens?: number; completion_tokens?: number };
+  /**
+   * Gateways such as Surplus and OpenRouter report the charged USD cost per call. When the seller
+   * brings its own upstream key, `cost` is the gateway fee and the model charge sits in
+   * cost_details.upstream_inference_cost.
+   */
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    cost?: number;
+    cost_details?: { upstream_inference_cost?: number | null };
+  };
 }
 
 /** True for api.openai.com, where a key is mandatory and the newer parameter names apply. */
@@ -107,12 +117,15 @@ export class OpenAIProvider implements Provider {
     ];
     let model = this.model;
     let lastIssues = '';
+    let reportedCost: number | null = null;
 
     for (let attempt = 0; attempt < 2; attempt++) {
       const res = await this.chat(req, schema, messages);
       model = res.model ?? model;
       usage.inputTokens += res.usage?.prompt_tokens ?? 0;
       usage.outputTokens += res.usage?.completion_tokens ?? 0;
+      const callCost = reportedCallCost(res.usage);
+      if (callCost !== null) reportedCost = (reportedCost ?? 0) + callCost;
       const message = res.choices?.[0]?.message;
       if (!message || typeof message.content !== 'string') {
         throw new ProviderError(
@@ -134,7 +147,7 @@ export class OpenAIProvider implements Provider {
           provider: this.name,
           model,
           usage,
-          costUsd: estimateCost(model, usage),
+          costUsd: reportedCost ?? estimateCost(model, usage),
           durationMs: Math.round(performance.now() - started),
           fromCassette: false,
         };
@@ -250,6 +263,14 @@ export class OpenAIProvider implements Provider {
     const ms = Number.isFinite(hinted) ? hinted : this.retryBaseMs * 3 ** attempt;
     await new Promise((r) => setTimeout(r, ms));
   }
+}
+
+function reportedCallCost(usage: ChatCompletion['usage']): number | null {
+  const parts = [usage?.cost, usage?.cost_details?.upstream_inference_cost].filter(
+    (v): v is number => typeof v === 'number' && Number.isFinite(v),
+  );
+  if (parts.length === 0) return null;
+  return parts.reduce((a, b) => a + b, 0);
 }
 
 function stripFences(text: string): string {

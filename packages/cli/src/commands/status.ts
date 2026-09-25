@@ -4,6 +4,7 @@ import {
   contractHome,
   createContext,
   EntityRegistry,
+  fmtUsd,
   loadVaultConfig,
   VAULT_DIRS,
 } from '@cubbon/core';
@@ -36,7 +37,7 @@ export function registerStatus(program: Command): void {
           `Claims: ${ctx.db.countClaims({ live: true })} live, ${ctx.db.countClaims()} total`,
         );
         console.log(
-          `Spend today: ${spend.calls} calls, ${spend.inputTokens + spend.outputTokens} tokens, $${spend.costUsd.toFixed(4)}${spend.unknownCostCalls ? ` (+${spend.unknownCostCalls} calls with unknown price)` : ''} of $${config.limits.dailySpendUsd} cap`,
+          `Spend today: ${spend.calls} calls, ${spend.inputTokens + spend.outputTokens} tokens, ${fmtUsd(spend.costUsd)}${spend.unknownCostCalls ? ` (+${spend.unknownCostCalls} calls with unknown price)` : ''} of $${config.limits.dailySpendUsd} cap`,
         );
         const entityDir = path.join(vaultPath, VAULT_DIRS.entities);
         const registry = await EntityRegistry.load(entityDir);

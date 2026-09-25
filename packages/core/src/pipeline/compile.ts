@@ -1,6 +1,7 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { type ScannedFile, scanFolders } from '../fs/scan.ts';
+import { fmtUsd } from '../llm/pricing.ts';
 import { mapLimit } from '../util/concurrency.ts';
 import { shortHash } from '../util/hash.ts';
 import { contractHome } from '../util/paths.ts';
@@ -153,7 +154,7 @@ async function appendCompileLog(ctx: PipelineContext, s: CompileSummary): Promis
   lines.push(`## ${s.startedAt.slice(11, 19)} UTC · compile ${s.runId}`);
   lines.push('');
   lines.push(
-    `Scanned ${s.scanned} · unchanged ${s.unchanged} · ignored ${s.ignored} · stored ${s.stored} · extracted ${s.extracted} · errors ${s.errors} · claims ${s.claims} · cost ${s.costUsd === null ? 'unknown' : `$${s.costUsd.toFixed(4)}`} · ${(s.durationMs / 1000).toFixed(1)}s`,
+    `Scanned ${s.scanned} · unchanged ${s.unchanged} · ignored ${s.ignored} · stored ${s.stored} · extracted ${s.extracted} · errors ${s.errors} · claims ${s.claims} · cost ${fmtUsd(s.costUsd)} · ${(s.durationMs / 1000).toFixed(1)}s`,
   );
   if (s.render) {
     const r = s.render;

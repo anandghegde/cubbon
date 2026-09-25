@@ -45,3 +45,10 @@ export function estimateCost(model: string, usage: Usage): number | null {
     (usage.inputTokens * price.inputPerMTok + usage.outputTokens * price.outputPerMTok) / 1_000_000
   );
 }
+
+/** Dollar amount for logs: four decimals, or two significant digits for sub-cent calls. */
+export function fmtUsd(value: number | null): string {
+  if (value === null) return 'unknown';
+  if (value === 0) return '$0.0000';
+  return value >= 0.01 ? `$${value.toFixed(4)}` : `$${Number(value.toPrecision(2))}`;
+}

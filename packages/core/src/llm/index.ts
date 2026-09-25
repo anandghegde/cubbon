@@ -47,5 +47,5 @@ export {
   type OpenAIOptions,
   OpenAIProvider,
 } from './openai.ts';
-export { estimateCost, setModelPrice } from './pricing.ts';
+export { estimateCost, fmtUsd, setModelPrice } from './pricing.ts';
 export * from './types.ts';

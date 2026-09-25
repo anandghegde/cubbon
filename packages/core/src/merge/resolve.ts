@@ -197,7 +197,10 @@ export class Resolver {
     if (e.type === 'milestone') {
       const parent = e.links.find((l) => l.predicate === 'part_of' && !l.superseded);
       const project = parent ? this.entities.get(parent.target) : undefined;
-      if (project && project.type === 'project') return `${project.name} – ${e.name}`;
+      if (project && project.type === 'project') {
+        const carriesProject = e.name.toLowerCase().startsWith(project.name.toLowerCase());
+        return carriesProject ? e.name : `${project.name} – ${e.name}`;
+      }
     }
     return e.name;
   }

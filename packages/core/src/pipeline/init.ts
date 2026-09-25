@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { writeVaultConfig } from '../config/load.ts';
-import { type VaultConfig, VaultConfigSchema } from '../config/schema.ts';
+import { type ModelSpec, type VaultConfig, VaultConfigSchema } from '../config/schema.ts';
 import { EntityRegistry } from '../merge/registry.ts';
 import { VAULT_DIRS } from './context.ts';
 
@@ -55,6 +55,8 @@ const GRAPH_CONFIG = {
 export interface InitOptions {
   folders: string[];
   owner: { name: string; email?: string; aliases?: string[]; organization?: string };
+  /** Overrides for models.extractor: model name, OpenAI-compatible base URL, API key variable. */
+  extractor?: Partial<ModelSpec>;
 }
 
 /** Creates the vault skeleton (PRD FR5 layout) and its configuration. Idempotent. */
@@ -124,6 +126,16 @@ export async function initVault(vaultPath: string, opts: InitOptions): Promise<V
       organization: opts.owner.organization,
     },
     watch: { folders: opts.folders, excludePaths: [vaultPath] },
+    models: opts.extractor
+      ? {
+          extractor: {
+            provider: opts.extractor.provider ?? 'openai',
+            model: opts.extractor.model ?? 'gpt-4.1-mini',
+            baseUrl: opts.extractor.baseUrl,
+            apiKeyEnv: opts.extractor.apiKeyEnv,
+          },
+        }
+      : undefined,
   });
   await writeVaultConfig(vaultPath, config);
   return config;
